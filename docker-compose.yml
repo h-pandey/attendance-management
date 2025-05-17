@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: attendance_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: attendance_management
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: user
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - attendance-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d attendance_management"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: attendance_app
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/attendance_management
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: user
+    networks:
+      - attendance-network
+
+networks:
+  attendance-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

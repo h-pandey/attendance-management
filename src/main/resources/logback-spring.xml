@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="true">
+    <springProperty scope="context" name="appName" source="spring.application.name"/>
+    <springProperty scope="context" name="serverPort" source="server.port"/>
+    
+    <property name="LOG_PATH" value="log"/>
+    <property name="LOG_FILE_NAME" value="${appName}-${serverPort}"/>
+
+    <!-- Console Appender -->
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- File Appender -->
+    <appender name="File" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${LOG_FILE_NAME}.log</file>
+        <immediateFlush>true</immediateFlush>
+        <append>true</append>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/${LOG_FILE_NAME}.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- Application Loggers -->
+    <logger name="com.attendance" level="DEBUG" additivity="false">
+        <appender-ref ref="Console"/>
+        <appender-ref ref="File"/>
+    </logger>
+
+    <!-- Spring Framework Loggers -->
+    <logger name="org.springframework" level="INFO" additivity="false">
+        <appender-ref ref="Console"/>
+        <appender-ref ref="File"/>
+    </logger>
+
+    <!-- Hibernate Loggers -->
+    <logger name="org.hibernate" level="INFO" additivity="false">
+        <appender-ref ref="Console"/>
+        <appender-ref ref="File"/>
+    </logger>
+
+    <!-- Root Logger -->
+    <root level="INFO">
+        <appender-ref ref="Console"/>
+        <appender-ref ref="File"/>
+    </root>
+</configuration> 
