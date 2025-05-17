@@ -22,7 +22,7 @@ services:
       retries: 5
 
   app:
-    image: ${DOCKER_USERNAME:-yourusername}/attendance-management:latest
+    image: attendance-management:latest
     container_name: attendance_app
     restart: always
     depends_on:

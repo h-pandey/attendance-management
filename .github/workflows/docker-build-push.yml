@@ -49,4 +49,6 @@ jobs:
           push: true
           tags: |
             ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest
-            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }} 
+            ${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:buildcache,mode=max 
