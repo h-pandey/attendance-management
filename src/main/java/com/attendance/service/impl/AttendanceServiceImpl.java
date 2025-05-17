@@ -1,10 +1,10 @@
 package com.attendance.service.impl;
 
-import com.attendance.dto.AttendanceRequest;
 import com.attendance.dto.AttendanceResponse;
 import com.attendance.dto.AttendanceSummaryResponse;
 import com.attendance.entity.Attendance;
 import com.attendance.entity.Employee;
+import com.attendance.enums.AttendanceAction;
 import com.attendance.enums.AttendanceEvent;
 import com.attendance.exception.InvalidAttendanceException;
 import com.attendance.exception.ResourceNotFoundException;
@@ -37,50 +37,38 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Override
     @Transactional
-    public AttendanceResponse markAttendance(Long employeeId, AttendanceRequest request) {
+    public AttendanceResponse markAttendance(Long employeeId, String event, String remarks) {
         Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + employeeId));
 
-        LocalDateTime timestamp = request.getTimestamp();
+        LocalDateTime timestamp = LocalDateTime.now();
         LocalDate date = timestamp.toLocalDate();
         LocalTime time = timestamp.toLocalTime();
 
-        // Validate timestamp is not in the future
-        if (timestamp.isAfter(LocalDateTime.now())) {
-            throw new InvalidAttendanceException("Cannot mark attendance for future timestamp");
-        }
+        // Validate action type using enum
+        AttendanceAction action = AttendanceAction.valueOf(event);
+        boolean isPunchIn = action == AttendanceAction.PUNCH_IN;
+        boolean isPunchOut = action == AttendanceAction.PUNCH_OUT;
 
-        // Check for duplicate punch-in/out
-        boolean isPunchIn = "PUNCH_IN".equals(request.getAction());
-        boolean isPunchOut = "PUNCH_OUT".equals(request.getAction());
-        
-        if (!isPunchIn && !isPunchOut) {
-            throw new InvalidAttendanceException("Invalid action. Must be either PUNCH_IN or PUNCH_OUT");
-        }
+        // Get all attendance entries for the day, sorted by timestamp
+        List<Attendance> existingEntries = attendanceRepository.findByEmployeeIdAndDate(employeeId, date)
+                .stream()
+                .sorted(Comparator.comparing(Attendance::getTimestamp))
+                .collect(Collectors.toList());
 
-        List<Attendance> existingEntries = attendanceRepository.findByEmployeeIdAndDate(employeeId, date);
-        
-        if (isPunchIn) {
-            // Check if already punched in
-            boolean alreadyPunchedIn = existingEntries.stream()
-                    .anyMatch(entry -> "PUNCH_IN".equals(entry.getAction()));
-            if (alreadyPunchedIn) {
-                throw new InvalidAttendanceException("Employee already punched in for today");
-            }
-        } else { // PUNCH_OUT
-            // Check if already punched out
-            boolean alreadyPunchedOut = existingEntries.stream()
-                    .anyMatch(entry -> "PUNCH_OUT".equals(entry.getAction()));
-            if (alreadyPunchedOut) {
-                throw new InvalidAttendanceException("Employee already punched out for today");
-            }
+        // Validate punch in/out sequence
+        if (!existingEntries.isEmpty()) {
+            Attendance lastEntry = existingEntries.get(existingEntries.size() - 1);
+            String lastAction = lastEntry.getAction().name();
             
-            // Check if there's a punch-in for today
-            boolean hasPunchIn = existingEntries.stream()
-                    .anyMatch(entry -> "PUNCH_IN".equals(entry.getAction()));
-            if (!hasPunchIn) {
-                throw new InvalidAttendanceException("Cannot punch out without a punch-in record");
+            if (isPunchIn && AttendanceAction.PUNCH_IN.name().equals(lastAction)) {
+                throw new InvalidAttendanceException("Cannot punch in twice in a row. Last action was also PUNCH_IN");
             }
+            if (isPunchOut && AttendanceAction.PUNCH_OUT.name().equals(lastAction)) {
+                throw new InvalidAttendanceException("Cannot punch out twice in a row. Last action was also PUNCH_OUT");
+            }
+        } else if (isPunchOut) {
+            throw new InvalidAttendanceException("Cannot punch out without a previous punch-in record");
         }
 
         // Check if it's a weekend
@@ -94,14 +82,16 @@ public class AttendanceServiceImpl implements AttendanceService {
         boolean isOvertime = time.isAfter(LocalTime.of(18, 0));
 
         // Calculate duration if it's a punch-out
-        Integer durationMinutes = null;
-        if (isPunchOut) {
-            Attendance lastPunchIn = existingEntries.stream()
-                    .filter(entry -> "PUNCH_IN".equals(entry.getAction()))
-                    .findFirst()
-                    .orElseThrow(() -> new InvalidAttendanceException("No punch-in record found for today"));
-            
-            durationMinutes = (int) Duration.between(lastPunchIn.getTimestamp(), timestamp).toMinutes();
+        Long durationMinutes = null;
+        if (isPunchOut && !existingEntries.isEmpty()) {
+            // Find the last punch-in
+            Optional<Attendance> lastPunchIn = existingEntries.stream()
+                    .filter(entry -> AttendanceAction.PUNCH_IN.name().equals(entry.getAction().name()))
+                    .reduce((first, second) -> second); // Get the last punch-in
+
+            if (lastPunchIn.isPresent()) {
+                durationMinutes = Duration.between(lastPunchIn.get().getTimestamp(), timestamp).toMinutes();
+            }
         }
 
         Attendance attendance = Attendance.builder()
@@ -109,14 +99,14 @@ public class AttendanceServiceImpl implements AttendanceService {
                 .timestamp(timestamp)
                 .date(date)
                 .time(time)
-                .action(AttendanceEvent.valueOf(request.getAction()))
-                .durationMinutes(durationMinutes != null ? (long) durationMinutes : null)
+                .action(AttendanceEvent.valueOf(event))
+                .durationMinutes(durationMinutes)
                 .isWorkingDay(!isWeekend && !isHoliday)
                 .isHoliday(isHoliday)
                 .holidayName(holidayName)
                 .isWeekend(isWeekend)
                 .isOvertime(isOvertime)
-                .remarks(request.getRemarks())
+                .remarks(remarks)
                 .build();
 
         Attendance savedAttendance = attendanceRepository.save(attendance);

@@ -1,8 +1,8 @@
 package com.attendance.controller;
 
-import com.attendance.dto.AttendanceRequest;
 import com.attendance.dto.AttendanceResponse;
 import com.attendance.dto.AttendanceSummaryResponse;
+import com.attendance.enums.AttendanceAction;
 import com.attendance.service.AttendanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -22,13 +22,15 @@ public class AttendanceController {
     @PostMapping("/{employeeId}/mark/{event}")
     public ResponseEntity<AttendanceResponse> markAttendance(
             @PathVariable Long employeeId,
-            @PathVariable String event) {
-        AttendanceRequest request = new AttendanceRequest();
-        request.setTimestamp(LocalDateTime.now());
-        request.setAction(event);
-        request.setRemarks(null);
+            @PathVariable String event,
+            @RequestParam(required = false) String remarks) {
         
-        AttendanceResponse response = attendanceService.markAttendance(employeeId, request);
+        // Validate event type using enum
+        if (!AttendanceAction.isValid(event)) {
+            throw new IllegalArgumentException("Invalid event type. Must be either PUNCH_IN or PUNCH_OUT");
+        }
+
+        AttendanceResponse response = attendanceService.markAttendance(employeeId, event, remarks);
         return ResponseEntity.ok(response);
     }
 

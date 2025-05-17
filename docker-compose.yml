@@ -22,7 +22,7 @@ services:
       retries: 5
 
   app:
-    image: ${DOCKER_USERNAME:-yourusername}/attendance-management:latest
+    image: hpandeydocker/attendance-management:latest
     container_name: attendance_app
     restart: always
     depends_on:
@@ -34,6 +34,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/attendance_management
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: user
+    volumes:
+      - ./log:/app/log
     networks:
       - attendance-network
 
