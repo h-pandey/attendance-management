@@ -1,7 +1,10 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:15
-    container_name: attendance_db
+    container_name: attendance_postgres
+    restart: always
     environment:
       POSTGRES_DB: attendance_management
       POSTGRES_USER: user
@@ -10,19 +13,18 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - attendance-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d attendance_management"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - attendance-network
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME:-yourusername}/attendance-management:latest
     container_name: attendance_app
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy
@@ -32,11 +34,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/attendance_management
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: user
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_SHOW_SQL: true
     networks:
       - attendance-network
-    restart: unless-stopped
 
 networks:
   attendance-network:
@@ -44,4 +43,3 @@ networks:
 
 volumes:
   postgres_data:
-    driver: local

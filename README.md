@@ -56,41 +56,52 @@ The application comes with a Docker Compose configuration that sets up both the 
    spring.datasource.password=postgres
    ```
 
-## Deployment
+## Deployment Steps
 
-### Prerequisites
-- Docker and Docker Compose installed
-- Docker Hub account (for pulling the image)
+### Option 1: Using Docker (Recommended)
 
-### Running with Docker Compose
-
-1. Create a `.env` file in the project root (optional):
-   ```
-   DOCKER_USERNAME=your-dockerhub-username
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd attendance-management
    ```
 
-2. Start the application:
+2. Build the application:
+   ```bash
+   mvn clean package -DskipTests
+   ```
+
+3. Start the application using Docker Compose:
    ```bash
    docker-compose up -d
    ```
 
-3. The application will be available at `http://localhost:8080`
+4. The application will be available at:
+   - API: http://localhost:8080
+   - Database: localhost:5432
 
-### CI/CD Pipeline
+5. To stop the application:
+   ```bash
+   docker-compose down
+   ```
 
-This project uses GitHub Actions for continuous integration and deployment. The pipeline:
+### Option 2: Manual Deployment
 
-1. Triggers on push to master and pull requests
-2. Builds the application using Maven
-3. Builds and pushes the Docker image to Docker Hub
-4. Tags the image with both `latest` and the commit SHA
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd attendance-management
+   ```
 
-To set up the pipeline:
+2. Build the application:
+   ```bash
+   mvn clean package -DskipTests
+   ```
 
-1. Fork or clone this repository
-2. Add the following secrets to your GitHub repository:
-   - `DOCKER_USERNAME`: Your Docker Hub username
-   - `DOCKER_PASSWORD`: Your Docker Hub password or access token
+3. Run the application:
+   ```bash
+   java -jar target/attendance-management-0.0.1-SNAPSHOT.jar
+   ```
 
 ## API Endpoints
 
