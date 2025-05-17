@@ -1,8 +1,8 @@
 package com.attendance.controller;
 
+import com.attendance.dto.AttendanceRequest;
 import com.attendance.dto.AttendanceResponse;
 import com.attendance.dto.AttendanceSummaryResponse;
-import com.attendance.enums.AttendanceEvent;
 import com.attendance.service.AttendanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -22,8 +22,13 @@ public class AttendanceController {
     @PostMapping("/{employeeId}/mark/{event}")
     public ResponseEntity<AttendanceResponse> markAttendance(
             @PathVariable Long employeeId,
-            @PathVariable AttendanceEvent event) {
-        AttendanceResponse response = attendanceService.markAttendance(employeeId, event);
+            @PathVariable String event) {
+        AttendanceRequest request = new AttendanceRequest();
+        request.setTimestamp(LocalDateTime.now());
+        request.setAction(event);
+        request.setRemarks(null);
+        
+        AttendanceResponse response = attendanceService.markAttendance(employeeId, request);
         return ResponseEntity.ok(response);
     }
 

@@ -1,4 +1,4 @@
-package com.attendance.service;
+package com.attendance.service.impl;
 
 import com.attendance.dto.AttendanceRequest;
 import com.attendance.dto.AttendanceResponse;
@@ -10,9 +10,10 @@ import com.attendance.exception.InvalidAttendanceException;
 import com.attendance.exception.ResourceNotFoundException;
 import com.attendance.repository.AttendanceRepository;
 import com.attendance.repository.EmployeeRepository;
+import com.attendance.service.AttendanceService;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,17 +26,16 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class AttendanceService {
-    private static final Logger logger = LoggerFactory.getLogger(AttendanceService.class);
+@RequiredArgsConstructor
+public class AttendanceServiceImpl implements AttendanceService {
+    private static final Logger logger = LoggerFactory.getLogger(AttendanceServiceImpl.class);
     private static final LocalTime WORK_START_TIME = LocalTime.of(9, 0); // 9:00 AM
     private static final LocalTime WORK_END_TIME = LocalTime.of(17, 0); // 5:00 PM
 
-    @Autowired
-    private AttendanceRepository attendanceRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final EmployeeRepository employeeRepository;
 
-    @Autowired
-    private EmployeeRepository employeeRepository;
-
+    @Override
     @Transactional
     public AttendanceResponse markAttendance(Long employeeId, AttendanceRequest request) {
         Employee employee = employeeRepository.findById(employeeId)
@@ -123,6 +123,7 @@ public class AttendanceService {
         return mapToResponse(savedAttendance);
     }
 
+    @Override
     public List<AttendanceResponse> getAttendanceByEmployeeId(Long employeeId) {
         if (!employeeRepository.existsById(employeeId)) {
             throw new ResourceNotFoundException("Employee not found with id: " + employeeId);
@@ -132,40 +133,7 @@ public class AttendanceService {
                 .collect(Collectors.toList());
     }
 
-    private AttendanceResponse mapToResponse(Attendance attendance) {
-        return AttendanceResponse.builder()
-                .id(attendance.getId())
-                .employeeId(attendance.getEmployee().getId())
-                .employeeName(attendance.getEmployee().getName())
-                .timestamp(attendance.getTimestamp())
-                .date(attendance.getDate())
-                .time(attendance.getTime())
-                .action(attendance.getAction().name())
-                .durationMinutes(attendance.getDurationMinutes() != null ? attendance.getDurationMinutes().intValue() : null)
-                .isWorkingDay(attendance.isWorkingDay())
-                .isHoliday(attendance.isHoliday())
-                .holidayName(attendance.getHolidayName())
-                .isWeekend(attendance.isWeekend())
-                .isOvertime(attendance.isOvertime())
-                .remarks(attendance.getRemarks())
-                .build();
-    }
-
-    private boolean isWeekend(LocalDate date) {
-        int dayOfWeek = date.getDayOfWeek().getValue();
-        return dayOfWeek >= 6; // Saturday = 6, Sunday = 7
-    }
-
-    private boolean isHoliday(LocalDate date) {
-        // TODO: Implement holiday checking logic
-        // This could be enhanced with a holiday calendar or external service
-        return false;
-    }
-
-    private boolean isOvertime(LocalTime time) {
-        return time.isAfter(WORK_END_TIME);
-    }
-
+    @Override
     public AttendanceSummaryResponse getAttendanceForDuration(Long employeeId, LocalDateTime from, LocalDateTime to) {
         logger.info("Fetching attendance summary for employeeId: {} from: {} to: {}", employeeId, from, to);
         
@@ -256,6 +224,25 @@ public class AttendanceService {
             .fromDate(from.toLocalDate())
             .toDate(to.toLocalDate())
             .build();
+    }
+
+    private AttendanceResponse mapToResponse(Attendance attendance) {
+        return AttendanceResponse.builder()
+                .id(attendance.getId())
+                .employeeId(attendance.getEmployee().getId())
+                .employeeName(attendance.getEmployee().getName())
+                .timestamp(attendance.getTimestamp())
+                .date(attendance.getDate())
+                .time(attendance.getTime())
+                .action(attendance.getAction().name())
+                .durationMinutes(attendance.getDurationMinutes() != null ? attendance.getDurationMinutes().intValue() : null)
+                .isWorkingDay(attendance.isWorkingDay())
+                .isHoliday(attendance.isHoliday())
+                .holidayName(attendance.getHolidayName())
+                .isWeekend(attendance.isWeekend())
+                .isOvertime(attendance.isOvertime())
+                .remarks(attendance.getRemarks())
+                .build();
     }
 
     private AttendanceResponse convertToAttendanceResponse(Attendance attendance) {

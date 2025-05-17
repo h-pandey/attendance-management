@@ -2,7 +2,10 @@ package com.attendance.entity;
 
 import com.attendance.enums.AttendanceEvent;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
@@ -11,6 +14,9 @@ import java.time.LocalTime;
 
 @Data
 @Entity
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "attendance", indexes = {
     @Index(name = "idx_employee_date", columnList = "employee_id, date"),
     @Index(name = "idx_employee_timestamp", columnList = "employee_id, timestamp"),
