@@ -1,34 +1,36 @@
 package com.attendance.controller;
 
-import com.attendance.dto.AttendanceResponse;
-import com.attendance.dto.AttendanceSummaryResponse;
-import com.attendance.enums.AttendanceAction;
-import com.attendance.service.AttendanceService;
+import java.time.LocalDate;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import com.attendance.dto.AttendanceResponse;
+import com.attendance.dto.AttendanceSummaryResponse;
+import com.attendance.service.AttendanceService;
 
 @RestController
 @RequestMapping("/api/attendance")
 public class AttendanceController {
 
-    @Autowired
-    private AttendanceService attendanceService;
+    private final AttendanceService attendanceService;
+
+    public AttendanceController(AttendanceService attendanceService) {
+        this.attendanceService = attendanceService;
+    }
 
     @PostMapping("/{employeeId}/mark/{event}")
     public ResponseEntity<AttendanceResponse> markAttendance(
             @PathVariable Long employeeId,
             @PathVariable String event,
             @RequestParam(required = false) String remarks) {
-        
-        // Validate event type using enum
-        if (!AttendanceAction.isValid(event)) {
-            throw new IllegalArgumentException("Invalid event type. Must be either PUNCH_IN or PUNCH_OUT");
-        }
 
         AttendanceResponse response = attendanceService.markAttendance(employeeId, event, remarks);
         return ResponseEntity.ok(response);
@@ -40,9 +42,6 @@ public class AttendanceController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDate toDate) {
         
-        LocalDateTime from = fromDate != null ? fromDate.atStartOfDay() : null;
-        LocalDateTime to = toDate != null ? toDate.atTime(23, 59, 59) : null;
-        
-        return ResponseEntity.ok(attendanceService.getAttendanceForDuration(employeeId, from, to));
+        return ResponseEntity.ok(attendanceService.getAttendanceForDuration(employeeId, fromDate, toDate));
     }
 } 

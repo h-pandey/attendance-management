@@ -2,8 +2,7 @@ package com.attendance.exception;
 
 import com.attendance.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -18,14 +17,14 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
             ResourceNotFoundException ex, HttpServletRequest request) {
-        logger.error("Resource not found: {}", ex.getMessage());
+        log.error("Resource not found: {}", ex.getMessage());
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())
@@ -40,7 +39,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(DuplicateEmailException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateEmailException(
             DuplicateEmailException ex, HttpServletRequest request) {
-        logger.error("Duplicate email: {}", ex.getMessage());
+        log.error("Duplicate email: {}", ex.getMessage());
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.CONFLICT.value())
@@ -55,7 +54,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(InvalidAttendanceException.class)
     public ResponseEntity<ErrorResponse> handleInvalidAttendanceException(
             InvalidAttendanceException ex, HttpServletRequest request) {
-        logger.error("Invalid attendance: {}", ex.getMessage());
+        log.error("Invalid attendance: {}", ex.getMessage());
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
@@ -70,7 +69,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(
             Exception ex, HttpServletRequest request) {
-        logger.error("Unexpected error occurred", ex);
+        log.error("Unexpected error occurred", ex);
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
@@ -94,7 +93,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             errors.put(error.getField(), error.getDefaultMessage())
         );
 
-        logger.error("Validation failed: {}", errors);
+        log.error("Validation failed: {}", errors);
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
